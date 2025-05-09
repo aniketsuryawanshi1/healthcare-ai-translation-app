@@ -1,34 +1,4 @@
-version: "3.9"
-
 services:
-  backend:
-    build:
-      context: ./backend
-    container_name: backend_service
-    volumes:
-      - static_volume:/app/staticfiles
-      - media_volume:/app/media
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
-    env_file:
-      - ./backend/.env
-    command: >
-      gunicorn --bind 0.0.0.0:8000 healthcare_ai_translation.wsgi:application
-    networks:
-      - app_network
-
-  frontend:
-    build:
-      context: ./frontend
-    container_name: frontend_service
-    ports:
-      - "3000:80" # Serve on localhost:3000
-    depends_on:
-      - backend
-    networks:
-      - app_network
 
   db:
     image: mysql:8.0
@@ -42,7 +12,39 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     ports:
-      - "3306:3306"
+      - "3307:3306"
+    networks:
+      - app_network
+
+  backend:
+    build: 
+      context: ./backend
+    container_name: backend_service
+    volumes:
+      - ./backend:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - ./backend/.env
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 healthcare_ai_translation.wsgi:application"
+    networks:
+      - app_network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend_service
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
     networks:
       - app_network
 
