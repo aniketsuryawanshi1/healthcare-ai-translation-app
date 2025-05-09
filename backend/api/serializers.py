@@ -54,9 +54,13 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, attrs):
         email = attrs.get('email')
         password = attrs.get('password')
-
+        request = self.context.get('request')
+        
+        user = User.objects.filter(email=email).first()
+        if not user:
+            raise AuthenticationFailed('User with this email does not exist.')
         # Authenticate user
-        user = authenticate(request=self.context.get('request'), email=email, password=password)
+        user = authenticate(request, username=user.username, password=password)
         if not user:
             raise AuthenticationFailed('Invalid credentials or user does not exist.')
 
