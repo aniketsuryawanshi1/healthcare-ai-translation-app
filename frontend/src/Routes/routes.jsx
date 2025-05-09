@@ -10,7 +10,8 @@ import {
 
 } from "../pages/index";
 
-import { Navbar, SideNav } from "../components/index";
+
+import {  SideNav } from "../components/index";
 import { useAuth } from "../context/AuthContext";
 import PrivateRoute from "./ProtectedRoute";
 import PublicRoutes from "./PublicRoutes";
@@ -21,8 +22,8 @@ const MainRoutes = () => {
   const { token } = useAuth();
 
   return (
-    <Layout style={{ minHeight: "100vh", width: "100vw" }}>
-      <Navbar />
+   <Layout style={{ minHeight: "100vh", width: "100vw" }}>
+      
       <Layout>
         {token && <SideNav />} {/* Show SideNav only if logged in */}
         <Layout style={{ paddingLeft: token ? 0 : 0 }}>
@@ -32,6 +33,7 @@ const MainRoutes = () => {
               justifyContent: "center",
               alignItems: "center",
               padding: "10px",
+
             }}
           >
             <Routes>

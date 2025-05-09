@@ -98,3 +98,7 @@ class LogoutSerializer(serializers.Serializer):
             token.blacklist()
         except TokenError:
             self.fail('bad_token')
+            
+            
+            
+    

@@ -55,6 +55,6 @@ class LogoutView(APIView):
             serializer.save()
             return Response({
                 'message': 'User logged out successfully'
-            }, status=status.HTTP_205_RESET_CONTENT)
+            }, status=status.HTTP_204_NO_CONTENT)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

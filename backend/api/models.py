@@ -77,3 +77,49 @@ class User(AbstractBaseUser, PermissionsMixin):
         related_name='custom_user_set',
         blank=True,
     )
+
+
+# Language model to store supported languages for translation
+class Language(models.Model):
+    code = models.CharField(max_length=10, unique=True)  # e.g. 'en' for English, 'es' for Spanish
+    name = models.CharField(max_length=50)  # e.g. 'English', 'Spanish'
+
+    def __str__(self):
+        return self.name
+
+
+# User Profile Model
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    is_patient = models.BooleanField(default=False)  # To distinguish between patient and healthcare provider
+    language_preference = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return self.user.username
+
+
+# Translation Session Model to store translation/transcription history
+class TranslationSession(models.Model):
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_sessions')
+    provider = models.ForeignKey(User, on_delete=models.CASCADE, related_name='provider_sessions')
+    session_date = models.DateTimeField(auto_now_add=True)
+    original_language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='original_language')
+    translated_language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='translated_language')
+    original_text = models.TextField()  # The text transcribed from the user's speech
+    translated_text = models.TextField()  # The translated version of the text
+    transcription_error = models.BooleanField(default=False)  # Tracks if an error occurred in transcription
+
+    def __str__(self):
+        return f"Session {self.id} - {self.patient.username} to {self.provider.username}"
+
+
+
+# Audio Model to store audio files related to the translation sessions (optional)
+class TranslationAudio(models.Model):
+    session = models.ForeignKey(TranslationSession, on_delete=models.CASCADE)
+    audio_file = models.FileField(upload_to='translation_audio/')  # Store audio file for playback
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Audio for session {self.session.id}"
+

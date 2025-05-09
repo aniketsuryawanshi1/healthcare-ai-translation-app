@@ -1,0 +1,148 @@
+/* style.css */
+
+/* Overall Layout */
+/* .landing-container {
+  background: linear-gradient(135deg, #e0f7fa, #f1f8e9);
+  min-height: 100vh;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+} */
+
+/* Hero Section */
+.hero-section {
+  width: 100%;
+  max-width: 1200px;
+  margin: auto;
+  padding: 2rem 1rem;
+  display: flex;
+  align-items: center;
+
+}
+
+/* SVG Illustration */
+.hero-svg {
+  width: 100%;
+  max-width: 450px;
+  animation: float 4s ease-in-out infinite;
+  display: block;
+  margin: 0 auto;
+}
+
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
+
+/* Hero Content */
+.hero-content {
+  padding: 2rem;
+  text-align: left;
+}
+
+.gradient-title {
+  font-size: 2.5rem;
+  background: linear-gradient(to right, #00796b, #26c6da);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: bold;
+}
+
+.hero-description {
+  font-size: 1.1rem;
+  color: #333;
+  margin: 1rem 0;
+  line-height: 1.6;
+}
+
+/* Icons Section */
+.hero-icons {
+  font-size: 2rem;
+  margin: 1rem 0;
+  color: #00acc1;
+}
+
+.icon {
+  margin-right: 1rem;
+  transition: transform 0.3s ease;
+}
+
+.icon:hover {
+  transform: scale(1.2);
+}
+
+/* Buttons */
+.auth-btns {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+
+}
+
+.btn-login {
+  background: linear-gradient(to right, #00bcd4, #00796b);
+  border: none;
+  color: black;
+  height: 45px;
+width: 120px;
+font-weight: bold;
+border-color: black;
+}
+
+.btn-login:hover {
+  background: linear-gradient(to right, #00796b, #004d40) !important;
+  color: white !important;
+}
+
+.btn-register {
+
+  color: black;
+  height: 45px;
+  font-weight: bold;
+width: 120px;
+border-color: black;
+}
+
+.btn-register:hover {
+  background: #e0f2f1 !important;
+  color: #004d40 !important;
+  border: black;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-section {
+    flex-direction: column;
+    padding: 1.5rem 1rem;
+  }
+
+  .hero-content {
+    text-align: center;
+    padding: 1rem;
+  }
+
+  .gradient-title {
+    font-size: 1.8rem;
+  }
+
+  .hero-description {
+    font-size: 1rem;
+  }
+
+  .auth-btns {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1.2rem;
+  }
+
+  .btn-login,
+  .btn-register {
+    width: 100%;
+    max-width: 300px;
+  }
+}
