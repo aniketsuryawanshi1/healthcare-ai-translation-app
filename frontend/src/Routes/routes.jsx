@@ -1,32 +1,31 @@
-import { Routes, Route } from "react-router-dom";
+import {  Routes, Route } from "react-router-dom";
 import { Layout } from "antd";
 import {
   Register,
   Login,
   
   Dashboard,
+ PatientDashboard ,
  
   LandingPage,
+  ProfileForm,
 
 } from "../pages/index";
 
 
-import {  SideNav } from "../components/index";
-import { useAuth } from "../context/AuthContext";
 import PrivateRoute from "./ProtectedRoute";
 import PublicRoutes from "./PublicRoutes";
 const { Content } = Layout;
 
 const MainRoutes = () => {
-  // use shared context.
-  const { token } = useAuth();
+
 
   return (
    <Layout style={{ minHeight: "100vh", width: "100vw" }}>
       
       <Layout>
-        {token && <SideNav />} {/* Show SideNav only if logged in */}
-        <Layout style={{ paddingLeft: token ? 0 : 0 }}>
+
+        <Layout>
           <Content
             style={{
               display: "flex",
@@ -36,12 +35,29 @@ const MainRoutes = () => {
 
             }}
           >
+    
             <Routes>
               <Route
                 path="/"
                 element={
                   <PublicRoutes>
                     <LandingPage />
+                  </PublicRoutes>
+                }
+              />
+              <Route
+                path="/patient"
+                element={
+                  <PublicRoutes>
+                    <PatientDashboard />
+                  </PublicRoutes>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <PublicRoutes>
+                    <ProfileForm />
                   </PublicRoutes>
                 }
               />
@@ -71,8 +87,8 @@ const MainRoutes = () => {
                   </PrivateRoute>
                 }
               />
-
-            </Routes>
+</Routes> 
+            
           </Content>
         </Layout>
       </Layout>

@@ -1,3 +1,4 @@
+
 services:
 
   db:
@@ -11,6 +12,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mysql/conf.d/my.cnf:/etc/mysql/conf.d/my.cnf
     ports:
       - "3307:3306"
     networks:
@@ -31,7 +33,7 @@ services:
     env_file:
       - ./backend/.env
     command: >
-      sh -c "python manage.py migrate &&
+      sh -c "
              python manage.py collectstatic --noinput &&
              gunicorn --bind 0.0.0.0:8000 healthcare_ai_translation.wsgi:application"
     networks:

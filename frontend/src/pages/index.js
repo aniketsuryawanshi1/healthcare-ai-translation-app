@@ -4,6 +4,9 @@ import Login from "./Authentication/Login";
 import Dashboard from "./Home/Dashboard";
 
 import LandingPage from "./Home/LandingPage";
+import PatientDashboard from './Home/PatientDashboard';
+
+import ProfileForm from "./Home/profile"
 
 export {
   Register,
@@ -13,5 +16,7 @@ export {
 
   // Home Page Pages
   Dashboard,
+  PatientDashboard,
+  ProfileForm,
 
 };

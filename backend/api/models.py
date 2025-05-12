@@ -47,7 +47,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now=True)
     auth_provider = models.CharField(max_length=50, blank=False, null=False, default=AUTH_PROVIDERS.get('email'))
-    is_patient = models.BooleanField(default=False)
     is_doctor = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'username'
@@ -78,14 +77,35 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
     )
 
+LANGUAGE_CHOICES = sorted(list(set([
+    ("Afrikaans", "af"), ("Hausa", "ha"), ("Amharic", "am"), ("Hebrew", "he"), ("Arabic", "ar"),
+    ("Hindi", "hi"), ("Asturian", "ast"), ("Hungarian", "hu"), ("Azerbaijani", "az"),
+    ("Indonesian", "id"), ("Breton", "br"), ("Italian", "it"), ("Bulgarian", "bg"), ("Japanese", "ja"),
+    ("Bengali", "bn"), ("Javanese", "jv"), ("Bosnian", "bs"), ("Kannada", "kn"), ("Catalan", "ca"),
+    ("Kazakh", "kk"), ("Cebuano", "ceb"), ("Khmer", "km"), ("Czech", "cs"), ("Korean", "ko"),
+    ("Welsh", "cy"), ("Lao", "lo"), ("Danish", "da"), ("Lithuanian", "lt"), ("German", "de"),
+    ("Latvian", "lv"), ("Greek", "el"), ("Malagasy", "mg"), ("English", "en"), ("Maori", "mi"),
+    ("Spanish", "es"), ("Malayalam", "ml"), ("Estonian", "et"), ("Mongolian", "mn"),
+    ("Persian (Farsi)", "fa"), ("Marathi", "mr"), ("Finnish", "fi"), ("Malay", "ms"), ("French", "fr"),
+    ("Burmese", "my"), ("Irish", "ga"), ("Nepali", "ne"), ("Galician", "gl"), ("Dutch", "nl"),
+    ("Gujarati", "gu"), ("Norwegian", "no"), ("Punjabi", "pa"), ("Polish", "pl"), ("Portuguese", "pt"),
+    ("Croatian", "hr"), ("Romanian", "ro"), ("Haitian Creole", "ht"), ("Russian", "ru"),
+    ("Sindhi", "sd"), ("Armenian", "hy"), ("Sinhala", "si"), ("Slovak", "sk"), ("Igbo", "ig"),
+    ("Slovenian", "sl"), ("Icelandic", "is"), ("Somali", "so"), ("Albanian", "sq"),
+    ("Sundanese", "su"), ("Georgian", "ka"), ("Swedish", "sv"), ("Swahili", "sw"), ("Tamil", "ta"),
+    ("Telugu", "te"), ("Thai", "th"), ("Kurdish", "ku"), ("Tagalog (Filipino)", "tl"),
+    ("Kyrgyz", "ky"), ("Turkish", "tr"), ("Latin", "la"), ("Ukrainian", "uk"),
+    ("Luxembourgish", "lb"), ("Urdu", "ur"), ("Uzbek", "uz"), ("Vietnamese", "vi"),
+    ("Yoruba", "yo"), ("Chinese (Simplified)", "zh")
+])))
+
 
 # Language model to store supported languages for translation
 class Language(models.Model):
-    code = models.CharField(max_length=10, unique=True)  # e.g. 'en' for English, 'es' for Spanish
-    name = models.CharField(max_length=50)  # e.g. 'English', 'Spanish'
+    language = models.CharField(max_length=50, choices=LANGUAGE_CHOICES)
 
     def __str__(self):
-        return self.name
+        return f"{self.language}"
 
 
 # User Profile Model
@@ -93,6 +113,11 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_patient = models.BooleanField(default=False)  # To distinguish between patient and healthcare provider
     language_preference = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, blank=True)
+    first_name = models.CharField(max_length=20)
+    last_name = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=15)
+    profile_image = models.ImageField(upload_to="Profile Images/", blank=True, null=True)
+    gender = models.CharField(max_length=10, choices=[('M', 'Male'), ('F', 'Female'), ('O', 'Other')])
 
     def __str__(self):
         return self.user.username

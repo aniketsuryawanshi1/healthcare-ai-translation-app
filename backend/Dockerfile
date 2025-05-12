@@ -5,19 +5,23 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install dependencies
+# Install required system packages including tzdata
 RUN apt-get update && apt-get install -y \
     gcc \
     libmariadb-dev \
     libmariadb-dev-compat \
     pkg-config \
-    && rm -rf /var/lib/apt/lists/*  # Clean up to reduce image size
-
+    tzdata \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app/
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
 COPY . /app/
+
+# Run model download during build
+RUN python download_model.py
+
 
 RUN chmod +x manage.py
 RUN python manage.py collectstatic --noinput || true

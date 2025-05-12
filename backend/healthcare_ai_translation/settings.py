@@ -104,8 +104,8 @@ WSGI_APPLICATION = 'healthcare_ai_translation.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': os.getenv('DB_NAME', 'expense_db'),
-        'USER': os.getenv('DB_USER', 'expense_user'),
+        'NAME': os.getenv('DB_NAME', 'caretranslate_db'),
+        'USER': os.getenv('DB_USER', 'care_admin'),
         'PASSWORD': os.getenv('DB_PASSWORD', 'Andi4frc3@'),
         'HOST': os.getenv('DB_HOST', 'mysql_db'),  # Use 'mysql_db' for Docker setup
         'PORT': os.getenv('DB_PORT', '3306'),
