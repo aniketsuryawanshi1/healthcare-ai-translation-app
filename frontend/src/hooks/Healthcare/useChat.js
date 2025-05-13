@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { connectToRoom, disconnectFromRoom, addMessage, clearMessages } from '../store/slices/chatSlice';
+import { connectToRoom, disconnectFromRoom, addMessage, clearMessages } from "../../store/slices/chatSlice"
 
 const useChat = () => {
   const dispatch = useDispatch();

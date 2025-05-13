@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTranslationHistory } from '../store/slices/translationHistorySlice';
+import { fetchTranslationHistory } from "../../store/slices/translationHistorySlice";
 
 const useTranslationHistory = () => {
   const dispatch = useDispatch();

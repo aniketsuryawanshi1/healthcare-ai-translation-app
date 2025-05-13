@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
-import { fetchLanguages } from '../store/slices/languageSlice';
+import { fetchLanguages } from "../../store/slices/languageSlice";
 
 const useLanguages = () => {
   const dispatch = useDispatch();

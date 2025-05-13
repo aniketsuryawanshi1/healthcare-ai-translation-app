@@ -1,5 +1,5 @@
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchMessages, sendMessage } from '../store/slices/messageSlice';
+import { fetchMessages, sendMessage } from "../../store/slices/messageSlice";
 
 const useMessages = () => {
   const dispatch = useDispatch();
