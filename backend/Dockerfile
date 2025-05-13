@@ -26,4 +26,5 @@ RUN python download_model.py
 RUN chmod +x manage.py
 RUN python manage.py collectstatic --noinput || true
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "healthcare_ai_translation.wsgi:application"]
+# Use Daphne for WebSocket support
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "healthcare_ai_translation.asgi:application"]

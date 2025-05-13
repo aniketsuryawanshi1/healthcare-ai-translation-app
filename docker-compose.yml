@@ -35,7 +35,7 @@ services:
     command: >
       sh -c "
              python manage.py collectstatic --noinput &&
-             gunicorn --bind 0.0.0.0:8000 healthcare_ai_translation.wsgi:application"
+             daphne -b 0.0.0.0 -p 8000 healthcare_ai_translation.asgi:application"
     networks:
       - app_network
 

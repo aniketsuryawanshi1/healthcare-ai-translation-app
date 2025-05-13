@@ -22,3 +22,4 @@ torchaudio==2.7.0+cpu
 sentencepiece==0.2.0
 channels==4.2.2
 channels_redis==4.2.1
+daphne==4.1.2
