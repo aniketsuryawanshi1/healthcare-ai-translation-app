@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Profile, Language, TranslationHistory,PatientTranslation,HealthcareTranslation,Message
+from .models import User, Profile, Language, TranslationHistory,Message
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.password_validation import validate_password

@@ -94,13 +94,6 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
     
-    class Meta:
-        constraints = [
-            models.CheckConstraint(
-                check=~models.Q(is_patient=True, is_doctor=True),
-                name="prevent_patient_and_doctor_overlap"
-            )
-        ]
 
 
 class Language(models.Model):
