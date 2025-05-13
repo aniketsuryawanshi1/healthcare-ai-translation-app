@@ -1,214 +1,213 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useRef } from "react";
 import {
-  Button,
-  Select,
-  Typography,
-  Row,
   Col,
-  Card,
-  message,
+  Row,
+  Dropdown,
+  Avatar,
+  Select,
+  Button,
   Input,
-  Divider
+  Tooltip,
+  Progress,
+  Space,
+  Menu,
 } from "antd";
 import {
   AudioOutlined,
+  PauseOutlined,
   SendOutlined,
+  DownOutlined,
+  SoundOutlined,
   UserOutlined,
-  RobotOutlined
+  EditOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
-import AOS from "aos";
-import "aos/dist/aos.css";
 import "./patientDashboard.css";
 
-const { Title, Paragraph, Text } = Typography;
+const { TextArea } = Input;
 const { Option } = Select;
 
 const PatientDashboard = () => {
+  const [transcript, setTranscript] = useState("");
+  const [isListening, setIsListening] = useState(false);
   const [language, setLanguage] = useState("en-US");
-  const [userText, setUserText] = useState("");
-  const [replyText, setReplyText] = useState("");
-  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [healthcareMessages, setHealthcareMessages] = useState([]);
+  const [playingMessageIndex, setPlayingMessageIndex] = useState(null);
   const recognitionRef = useRef(null);
 
-  useEffect(() => {
-    AOS.init({ duration: 800 });
-  }, []);
-
-  const handleLanguageChange = (value) => setLanguage(value);
-
-  const handleSpeechInput = () => {
+  const startListening = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      message.error("Speech recognition is not supported in this browser.");
+      alert("Speech Recognition not supported in this browser");
       return;
     }
 
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
     recognition.lang = language;
     recognition.continuous = false;
-    recognition.interimResults = false;
 
+    recognition.onstart = () => setIsListening(true);
     recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript;
-      setUserText(transcript);
+      const speechResult = event.results[0][0].transcript;
+      setTranscript(speechResult);
     };
-
-    recognition.onerror = (event) => {
-      message.error("Speech recognition error: " + event.error);
-    };
+    recognition.onend = () => setIsListening(false);
 
     recognition.start();
-    recognitionRef.current = recognition;
   };
 
-  const handleSendMessage = () => {
-    if (!userText.trim()) {
-      message.warning("Please say or type something.");
-      return;
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
     }
-
-    const reply =
-      "Thank you for your message. We will assist you shortly.";
-    setReplyText(reply);
-    handleSpeak(reply);
   };
 
-  const handleSpeak = (text) => {
-    if (!window.speechSynthesis) {
-      message.error("Speech synthesis not supported.");
-      return;
+  const toggleListening = () => {
+    isListening ? stopListening() : startListening();
+  };
+
+  const handleSend = () => {
+    if (transcript.trim()) {
+      setHealthcareMessages((prev) => [
+        ...prev,
+        { text: transcript, progress: 0 },
+      ]);
+      setTranscript("");
     }
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = language;
-    setIsSpeaking(true);
-
-    utterance.onend = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(utterance);
   };
+
+  const handlePlayMessage = (index) => {
+    setPlayingMessageIndex(index);
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += 10;
+      setHealthcareMessages((prev) => {
+        const updated = [...prev];
+        updated[index].progress = progress;
+        return updated;
+      });
+      if (progress >= 100) {
+        clearInterval(interval);
+        setPlayingMessageIndex(null);
+      }
+    }, 200);
+  };
+
+  const userMenu = (
+    <Menu
+      onClick={({ key }) => {
+        if (key === "3") alert("Logging out...");
+      }}
+      items={[
+        {
+          key: "1",
+          icon: <UserOutlined />,
+          label: "View Profile",
+        },
+        {
+          key: "2",
+          icon: <EditOutlined />,
+          label: "Edit Profile",
+        },
+        {
+          key: "3",
+          icon: <LogoutOutlined />,
+          label: "Logout",
+        },
+      ]}
+    />
+  );
 
   return (
-    <div className="dashboard-container">
-      <Title level={2} className="dashboard-title">
-        🩺 Patient Interaction Panel
-      </Title>
-      <Row gutter={[24, 24]} justify="center" className="dashboard-content">
-        <Col xs={24} md={10} data-aos="fade-right">
-          <Card
-            className="interaction-card"
-            title={
-              <>
-                <UserOutlined /> Patient Communication
-              </>
-            }
-            bordered={false}
-            hoverable
-          >
-            <Text strong>Select Language:</Text>
-            <Select
-              defaultValue="en-US"
-              onChange={handleLanguageChange}
-              size="large"
-              className="lang-select"
-              style={{ width: "100%", marginBottom: 16 }}
-            >
-              <Option value="en-US">English</Option>
-              <Option value="hi-IN">Hindi</Option>
-              <Option value="es-ES">Spanish</Option>
-              <Option value="fr-FR">French</Option>
-            </Select>
-
-            <Button
-              block
-              icon={<AudioOutlined />}
-              type="primary"
-              size="large"
-              className="btn-speak"
-              onClick={handleSpeechInput}
-              style={{ marginBottom: 16 }}
-            >
-              Tap to Speak
-            </Button>
-
-            <Input.TextArea
-              value={userText}
-              onChange={(e) => setUserText(e.target.value)}
-              rows={4}
-              placeholder="Your message will appear here..."
-              className="user-textbox"
-              style={{ marginBottom: 16 }}
-            />
-
-            <Button
-              block
-              icon={<AudioOutlined />}
-              type="default"
-              size="large"
-              className="btn-listen"
-              onClick={() => handleSpeak(userText)}
-              style={{ marginBottom: 16 }}
-              disabled={!userText.trim()}
-            >
-              Listen to Your Message
-            </Button>
-
-            <Button
-              block
-              icon={<SendOutlined />}
-              type="primary"
-              size="large"
-              className="btn-send"
-              onClick={handleSendMessage}
-            >
-              Send Message
-            </Button>
-          </Card>
+    <section className="patient-dashboard">
+      <Row className="top-bar" justify="space-between" align="middle">
+        <Col>
+          <Dropdown overlay={userMenu} trigger={["hover"]}>
+            <div className="user-profile hover-glow">
+              <Avatar size={64} src="https://via.placeholder.com/150" />
+              <span className="username">
+                Aniket Suryavanshi <DownOutlined />
+              </span>
+            </div>
+          </Dropdown>
         </Col>
-
-        <Col xs={24} md={10} data-aos="fade-left">
-          <Card
-            className="reply-card"
-            title={
-              <>
-                <RobotOutlined /> Healthcare Response
-              </>
-            }
-            bordered={false}
-            hoverable
-          >
-            <Paragraph className="reply-text">
-              {replyText || <Text type="secondary">Awaiting response...</Text>}
-            </Paragraph>
-
-            {replyText && (
-              <>
-                <Divider />
-                <Button
-                  block
-                  icon={<AudioOutlined />}
-                  type="default"
-                  size="large"
-                  className="speak-btn"
-                  onClick={() => handleSpeak(replyText)}
-                >
-                  Listen Reply
-                </Button>
-
-                {isSpeaking && (
-                  <div className="wave-animation">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                )}
-              </>
-            )}
-          </Card>
+        <Col>
+          <div className="healthcare-profile hover-glow">
+            <Avatar size={64} src="https://via.placeholder.com/150" />
+            <span className="username">Healthcare Provider</span>
+          </div>
         </Col>
       </Row>
-    </div>
+
+      <Row gutter={32} className="dashboard-body">
+        <Col span={12} className="user-column">
+          <h3 className="section-title">👤 Patient Input</h3>
+          <Select
+            className="language-select"
+            value={language}
+            onChange={(val) => setLanguage(val)}
+          >
+            <Option value="en-US">English (US)</Option>
+            <Option value="hi-IN">Hindi</Option>
+            <Option value="mr-IN">Marathi</Option>
+          </Select>
+
+          <div className="action-buttons">
+            <Tooltip title={isListening ? "Pause Listening" : "Start Listening"}>
+              <div className="circular-button" onClick={toggleListening}>
+                {isListening ? <PauseOutlined /> : <AudioOutlined />}
+              </div>
+            </Tooltip>
+
+            <Tooltip title="Send to Healthcare">
+              <Button
+                type="primary"
+                icon={<SendOutlined />}
+                onClick={handleSend}
+                disabled={!transcript}
+              >
+                Send
+              </Button>
+            </Tooltip>
+          </div>
+
+          <TextArea
+            rows={4}
+            value={transcript}
+            onChange={(e) => setTranscript(e.target.value)}
+            placeholder="Your message appears here..."
+          />
+        </Col>
+
+        <Col span={12} className="healthcare-column">
+          <h3 className="section-title">🏥 Healthcare Responses</h3>
+          <div className="chat-box">
+            {healthcareMessages.map((msg, index) => (
+              <div
+                key={index}
+                className="chat-bubble"
+                onClick={() => handlePlayMessage(index)}
+              >
+                <SoundOutlined style={{ marginRight: 10 }} />
+                {msg.progress > 0 ? (
+                  <div style={{ width: "100%" }}>
+                    <Progress percent={msg.progress} size="small" />
+                    {msg.progress >= 100 && (
+                      <p className="chat-text">{msg.text}</p>
+                    )}
+                  </div>
+                ) : (
+                  <span>Audio message (click to play)</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </Col>
+      </Row>
+    </section>
   );
 };
 

@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',  # Token blacklist for JWT
     'corsheaders',  # CORS headers for Django
     'api',  # custom app
+    'channels' # Django Channels.
     
 ]
 
@@ -97,6 +98,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'healthcare_ai_translation.wsgi.application'
 
+# ASGI application
+ASGI_APPLICATION = 'healthcare_ai_translation.asgi.application'
+
+# Redis configuration for WebSocket channel layers
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],  # Redis server
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

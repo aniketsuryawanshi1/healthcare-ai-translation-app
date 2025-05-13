@@ -27,16 +27,3 @@ def translate_text(text, source_lang, target_lang):
     return translated_text
 
 
-def text_to_speech(text, lang_code):
-    """
-    Convert text to speech using gTTS.
-    Returns a Django-compatible File object for saving in FileField.
-    """
-    try:
-        tts = gTTS(text=text, lang=lang_code)
-        temp_file = NamedTemporaryFile(delete=True, suffix=".mp3")
-        tts.save(temp_file.name)
-        return File(temp_file, name=f"{uuid.uuid4()}.mp3")
-    except Exception as e:
-        print(f"TTS Error: {e}")
-        return None

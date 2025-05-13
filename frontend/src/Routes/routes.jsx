@@ -27,14 +27,15 @@ const MainRoutes = () => {
 
         <Layout>
           <Content
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              padding: "10px",
-
-            }}
-          >
+    style={{
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: "10px",
+  minHeight: "100vh",
+  width: "100%",     
+  overflowX: "hidden"  
+}}>
     
             <Routes>
               <Route

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Profile, TranslationSession, TranslationAudio
+from .models import User, Profile, Language, TranslationHistory,PatientTranslation,HealthcareTranslation,Message
 from django.contrib.auth import authenticate
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.password_validation import validate_password
@@ -99,10 +99,11 @@ class LogoutSerializer(serializers.Serializer):
             
             
 """ User Profile Serializer """
+""" User Profile Serializer """
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['user', 'is_patient', 'first_name', 'last_name', 'phone_number', 'profile_image', 'gender']
+        fields = ['user', 'is_patient', 'first_name', 'last_name', 'phone_number', 'profile_image', 'gender', 'language']
         extra_kwargs = {
             'profile_image': {'required': False, 'allow_null': True},
             'user': {'read_only': True},
@@ -122,49 +123,39 @@ class ProfileSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
-    
-""" Translation Session Serializer """
-class TranslationSessionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TranslationSession
-        fields = [
-            'patient',
-            'provider',
-            'original_language',
-            'translated_language',
-            'original_text',
-            'translated_text',
-            'transcription_error'
-        ]
-        extra_kwargs = {
-            'patient': {'read_only': True},  # Set patient from request.user in view
-            'session_date': {'read_only': True}
-        }
-
-    def validate(self, data):
-        if data['original_language'] == data['translated_language']:
-            raise serializers.ValidationError("Original and translated languages must be different.")
-        if not data['original_text']:
-            raise serializers.ValidationError("Original text cannot be empty.")
-        return data
-    
-""" Translation Audio Serializer """
-class TranslationAudioSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TranslationAudio
-        fields = ['session', 'audio_file', 'uploaded_at']
-        extra_kwargs = {
-            'session': {'read_only': True},
-            'uploaded_at': {'read_only': True}
-        }
-
-    def validate_audio_file(self, file):
-        if file.size > 10 * 1024 * 1024:  # 10MB limit
-            raise serializers.ValidationError("Audio file too large (limit: 10MB).")
-        if not file.name.endswith(('.mp3', '.wav', '.m4a')):
-            raise serializers.ValidationError("Unsupported file format. Allowed: mp3, wav, m4a.")
-        return file
-
 """ Language Serializer """
-# class LanguageSerializer(serializers.ModelSerializer):
-#     language = serializers.CharField(max_length=50)
+class LanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Language
+        fields = ['id', 'language_name', 'language_code']
+
+""" Message Serializer """
+class MessageSerializer(serializers.ModelSerializer):
+    sender = serializers.StringRelatedField(read_only=True)
+    receiver = serializers.StringRelatedField(read_only=True)
+    language = LanguageSerializer(read_only=True)
+
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'receiver', 'text', 'timestamp', 'is_read', 'language']
+
+    def create(self, validated_data):
+        return Message.objects.create(**validated_data)
+
+""" Translation History Serializer """
+class TranslationHistorySerializer(serializers.ModelSerializer):
+    patient = serializers.StringRelatedField(read_only=True)
+    doctor = serializers.StringRelatedField(read_only=True)
+    from_language = LanguageSerializer(read_only=True)
+    to_language = LanguageSerializer(read_only=True)
+    message = MessageSerializer(read_only=True)
+
+    class Meta:
+        model = TranslationHistory
+        fields = [
+            'id', 'patient', 'doctor', 'original_text', 'translated_text',
+            'from_language', 'to_language', 'is_from_patient', 'created_at', 'message'
+        ]
+
+    def create(self, validated_data):
+        return TranslationHistory.objects.create(**validated_data)

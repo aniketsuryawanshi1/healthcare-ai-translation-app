@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin, Group, Permission
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.utils import timezone
+
 
 # AUTH_PROVIDERS setup
 AUTH_PROVIDERS = {
@@ -77,74 +79,62 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
     )
 
-LANGUAGE_CHOICES = sorted(list(set([
-    ("Afrikaans", "af"), ("Hausa", "ha"), ("Amharic", "am"), ("Hebrew", "he"), ("Arabic", "ar"),
-    ("Hindi", "hi"), ("Asturian", "ast"), ("Hungarian", "hu"), ("Azerbaijani", "az"),
-    ("Indonesian", "id"), ("Breton", "br"), ("Italian", "it"), ("Bulgarian", "bg"), ("Japanese", "ja"),
-    ("Bengali", "bn"), ("Javanese", "jv"), ("Bosnian", "bs"), ("Kannada", "kn"), ("Catalan", "ca"),
-    ("Kazakh", "kk"), ("Cebuano", "ceb"), ("Khmer", "km"), ("Czech", "cs"), ("Korean", "ko"),
-    ("Welsh", "cy"), ("Lao", "lo"), ("Danish", "da"), ("Lithuanian", "lt"), ("German", "de"),
-    ("Latvian", "lv"), ("Greek", "el"), ("Malagasy", "mg"), ("English", "en"), ("Maori", "mi"),
-    ("Spanish", "es"), ("Malayalam", "ml"), ("Estonian", "et"), ("Mongolian", "mn"),
-    ("Persian (Farsi)", "fa"), ("Marathi", "mr"), ("Finnish", "fi"), ("Malay", "ms"), ("French", "fr"),
-    ("Burmese", "my"), ("Irish", "ga"), ("Nepali", "ne"), ("Galician", "gl"), ("Dutch", "nl"),
-    ("Gujarati", "gu"), ("Norwegian", "no"), ("Punjabi", "pa"), ("Polish", "pl"), ("Portuguese", "pt"),
-    ("Croatian", "hr"), ("Romanian", "ro"), ("Haitian Creole", "ht"), ("Russian", "ru"),
-    ("Sindhi", "sd"), ("Armenian", "hy"), ("Sinhala", "si"), ("Slovak", "sk"), ("Igbo", "ig"),
-    ("Slovenian", "sl"), ("Icelandic", "is"), ("Somali", "so"), ("Albanian", "sq"),
-    ("Sundanese", "su"), ("Georgian", "ka"), ("Swedish", "sv"), ("Swahili", "sw"), ("Tamil", "ta"),
-    ("Telugu", "te"), ("Thai", "th"), ("Kurdish", "ku"), ("Tagalog (Filipino)", "tl"),
-    ("Kyrgyz", "ky"), ("Turkish", "tr"), ("Latin", "la"), ("Ukrainian", "uk"),
-    ("Luxembourgish", "lb"), ("Urdu", "ur"), ("Uzbek", "uz"), ("Vietnamese", "vi"),
-    ("Yoruba", "yo"), ("Chinese (Simplified)", "zh")
-])))
-
-
-# Language model to store supported languages for translation
-class Language(models.Model):
-    language = models.CharField(max_length=50, choices=LANGUAGE_CHOICES)
-
-    def __str__(self):
-        return f"{self.language}"
-
 
 # User Profile Model
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    is_patient = models.BooleanField(default=False)  # To distinguish between patient and healthcare provider
-    language_preference = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, blank=True)
+    is_patient = models.BooleanField(default=False,db_index=True)  # To distinguish between patient and healthcare provider
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
     phone_number = models.CharField(max_length=15)
     profile_image = models.ImageField(upload_to="Profile Images/", blank=True, null=True)
     gender = models.CharField(max_length=10, choices=[('M', 'Male'), ('F', 'Female'), ('O', 'Other')])
+    language = models.ForeignKey('Language', on_delete=models.SET_NULL, null=True, blank=True, related_name="user_profiles",db_index=True)  # Added language field
 
     def __str__(self):
         return self.user.username
+    
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=~models.Q(is_patient=True, is_doctor=True),
+                name="prevent_patient_and_doctor_overlap"
+            )
+        ]
 
 
-# Translation Session Model to store translation/transcription history
-class TranslationSession(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_sessions')
-    provider = models.ForeignKey(User, on_delete=models.CASCADE, related_name='provider_sessions')
-    session_date = models.DateTimeField(auto_now_add=True)
-    original_language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='original_language')
-    translated_language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name='translated_language')
-    original_text = models.TextField()  # The text transcribed from the user's speech
-    translated_text = models.TextField()  # The translated version of the text
-    transcription_error = models.BooleanField(default=False)  # Tracks if an error occurred in transcription
-
-    def __str__(self):
-        return f"Session {self.id} - {self.patient.username} to {self.provider.username}"
-
-
-
-# Audio Model to store audio files related to the translation sessions (optional)
-class TranslationAudio(models.Model):
-    session = models.ForeignKey(TranslationSession, on_delete=models.CASCADE)
-    audio_file = models.FileField(upload_to='translation_audio/')  # Store audio file for playback
-    uploaded_at = models.DateTimeField(auto_now_add=True)
+class Language(models.Model):
+    language_name = models.CharField(max_length=50)
+    language_code = models.CharField(max_length=10)
 
     def __str__(self):
-        return f"Audio for session {self.session.id}"
+        return f"{self.language_name} ({self.language_code})"
 
+
+# Translation History (Chat)
+class TranslationHistory(models.Model):
+    patient = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='patient_messages')
+    doctor = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='doctor_messages')
+    original_text = models.TextField()
+    translated_text = models.TextField()
+    from_language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name="from_lang")
+    to_language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name="to_lang")
+    is_from_patient = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    message = models.ForeignKey('Message', on_delete=models.CASCADE, null=True, blank=True, related_name="translations")  # Added message field
+
+    def __str__(self):
+        sender = "Patient" if self.is_from_patient else "Doctor"
+        return f"{sender} → {self.translated_text[:30]}..."
+
+
+class Message(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    text = models.TextField()
+    timestamp = models.DateTimeField(default=timezone.now)
+    is_read = models.BooleanField(default=False)
+    language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name="messages")  # Added language field
+
+    def __str__(self):
+        return f"From {self.sender.username} to {self.receiver.username} at {self.timestamp}"

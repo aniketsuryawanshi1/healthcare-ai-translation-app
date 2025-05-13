@@ -1,14 +1,15 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import User, Profile, TranslationSession, TranslationAudio,LANGUAGE_CHOICES, Language
+from .models import User, Profile,Language, TranslationHistory,Message
 from .serializers import (
     RegisterSerializer, LoginSerializer, LogoutSerializer, ProfileSerializer, 
-    TranslationSessionSerializer, TranslationAudioSerializer
+  TranslationHistorySerializer,MessageSerializer,LanguageSerializer
 )
-from .utils import translate_text,text_to_speech
-from django.http import HttpResponse
+from .utils import translate_text
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.generics import ListAPIView
 
 """ User Registration View. """
 class RegisterView(APIView):
@@ -63,17 +64,6 @@ class LogoutView(APIView):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-""" Language List View. """
-class LanguageListView(APIView):
-    
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        language_choices = [{"value":key, "label" : value} for key, value in LANGUAGE_CHOICES]
-        return Response({
-            "language_choices" : language_choices,
-        }, status=status.HTTP_200_OK)
-    
 """ User Profile View. """
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -114,183 +104,144 @@ class ProfileView(APIView):
             }, status=status.HTTP_200_OK)
             
 
-""" Translation Session View. """
-class TranslationSessionView(APIView):
+class LanguageListView(APIView):
+    """
+    API to list all supported languages.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        languages = Language.objects.all()
+        serializer = LanguageSerializer(languages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+class MessageView(APIView):
+    """
+    API to send and retrieve messages.
+    """
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         """
-        Handles patient speech → text → translation → doctor.
+        Send a message from one user to another.
         """
-        patient = request.user
-        provider_id = request.data.get("provider_id")
-        original_text = request.data.get("original_text")
-        original_lang_code = request.data.get("original_language")
-        target_lang_code = request.data.get("translated_language")
+        sender = request.user
+        receiver_id = request.data.get('receiver_id')
+        text = request.data.get('text')
+
+        if not receiver_id or not text:
+            return Response({"error": "Receiver ID and text are required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            provider = User.objects.get(id=provider_id)
-            source_lang = Language.objects.get(code=original_lang_code)
-            target_lang = Language.objects.get(code=target_lang_code)
-        except (User.DoesNotExist, Language.DoesNotExist):
-            return Response({"error": "Invalid provider or language code."}, status=status.HTTP_400_BAD_REQUEST)
+            receiver = Profile.objects.get(user_id=receiver_id).user
+        except Profile.DoesNotExist:
+            return Response({"error": "Receiver not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        try:
-            translated_text = translate_text(original_text, original_lang_code, target_lang_code)
-        except Exception as e:
-            return Response({"error": "Translation failed.", "details": str(e)}, status=500)
+        # Get sender and receiver languages
+        sender_profile = Profile.objects.get(user=sender)
+        receiver_profile = Profile.objects.get(user=receiver)
 
-        # Create the Translation Session
-        session = TranslationSession.objects.create(
-            patient=patient,
-            provider=provider,
-            original_language=source_lang,
-            translated_language=target_lang,
-            original_text=original_text,
-            translated_text=translated_text
+        sender_language = sender_profile.language.language_code
+        receiver_language = receiver_profile.language.language_code
+        
+        if not sender_language or not receiver_language:
+            return Response({"error": "Language not found for sender or receiver."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        # Translate the message if languages differ
+        if sender_language != receiver_language:
+            translated_text = translate_text(text, sender_language, receiver_language)
+        else:
+            translated_text = text
+
+        # Save the original message
+        message = Message.objects.create(
+            sender=sender,
+            receiver=receiver,
+            text=text,
+            language=sender_profile.language
         )
 
-        # Validate and serialize session data
-        session_serializer = TranslationSessionSerializer(session)
-        if not session_serializer.is_valid():
-            return Response(session_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Save the translation in TranslationHistory
+        TranslationHistory.objects.create(
+            patient=sender_profile if sender_profile.is_patient else receiver_profile,
+            doctor=receiver_profile if receiver_profile.is_doctor else sender_profile,
+            original_text=text,
+            translated_text=translated_text,
+            from_language=sender_profile.language,
+            to_language=receiver_profile.language,
+            is_from_patient=sender_profile.is_patient,
+            message=message
+        )
 
-        # Optional: Generate audio for doctor
-        audio_path = text_to_speech(translated_text, target_lang_code)
-        if audio_path:
-            audio = TranslationAudio.objects.create(session=session, audio_file=audio_path)
-            # Serialize audio data
-            audio_serializer = TranslationAudioSerializer(audio)
-            return Response({
-                "message": "Translation saved.",
-                "session_id": session.id,
-                "original_text": original_text,
-                "translated_text": translated_text,
-                "audio_file": audio_serializer.data['audio_file']
-            }, status=status.HTTP_201_CREATED)
-        return Response({
-            "message": "Translation saved.",
-            "session_id": session.id,
-            "original_text": original_text,
-            "translated_text": translated_text
-        }, status=status.HTTP_201_CREATED)
+        return Response({"message": "Message sent successfully."}, status=status.HTTP_201_CREATED)
 
-    def patch(self, request):
+    def get(self, request):
         """
-        Handles doctor reply translation → patient language + audio.
-        """
-        session_id = request.data.get("session_id")
-        reply_text = request.data.get("reply_text")
-
-        try:
-            session = TranslationSession.objects.get(id=session_id)
-        except TranslationSession.DoesNotExist:
-            return Response({"error": "Session not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        try:
-            translated_reply = translate_text(
-                reply_text,
-                session.translated_language.code,
-                session.original_language.code
-            )
-        except Exception as e:
-            return Response({"error": "Reply translation failed.", "details": str(e)}, status=500)
-
-        # Optional: Generate audio for patient
-        audio_path = text_to_speech(translated_reply, session.original_language.code)
-        if audio_path:
-            audio = TranslationAudio.objects.create(session=session, audio_file=audio_path)
-            # Serialize audio data
-            audio_serializer = TranslationAudioSerializer(audio)
-            return Response({
-                "message": "Reply translated successfully.",
-                "original_reply": reply_text,
-                "translated_reply": translated_reply,
-                "audio_file": audio_serializer.data['audio_file'],
-                "patient_language": session.original_language.code
-            }, status=status.HTTP_200_OK)
-        
-        return Response({
-            "message": "Reply translated successfully.",
-            "original_reply": reply_text,
-            "translated_reply": translated_reply,
-            "patient_language": session.original_language.code
-        }, status=status.HTTP_200_OK)
-        
-""" Translation Audio View. """
-class TranslationAudioView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, session_id=None):
-        """
-        GET request to fetch audio files.
-        - If session_id is provided, return the audio for that session.
-        - If session_id is not provided, return all audio files related to the logged-in user.
+        Retrieve messages for the authenticated user.
         """
         user = request.user
-        is_patient = hasattr(user, 'patient')  # Check if user is a patient (based on your model setup)
-        is_doctor = hasattr(user, 'doctor')  # Check if user is a doctor (based on your model setup)
-        is_superuser = user.is_superuser  # Check if the user is a superuser
+        messages = Message.objects.filter(receiver=user).select_related('sender', 'receiver', 'language').order_by('-timestamp')
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-        if session_id:
-            # Get a single audio file by session_id
-            try:
-                audio = TranslationAudio.objects.get(session__id=session_id)
 
-                # Superuser can access all audio files
-                if is_superuser:
-                    pass  # No restrictions for superuser
-                
-                # Restrict access based on user role
-                elif is_patient and audio.session.patient != user:
-                    return Response({"error": "You are not authorized to access this audio."}, status=status.HTTP_403_FORBIDDEN)
-                elif is_doctor and audio.session.provider != user:
-                    return Response({"error": "You are not authorized to access this audio."}, status=status.HTTP_403_FORBIDDEN)
+class TranslationHistoryView(APIView):
+    """
+    API to retrieve translation history.
+    """
+    permission_classes = [IsAuthenticated]
 
-                with open(audio.audio_file.path, 'rb') as f:
-                    response = HttpResponse(f.read(), content_type="audio/mpeg")
-                    response['Content-Disposition'] = f'attachment; filename="{audio.audio_file.name}"'
-                    return response
-
-            except TranslationAudio.DoesNotExist:
-                return Response({"error": "Audio not found."}, status=status.HTTP_404_NOT_FOUND)
-
-        else:
-            # Get all audio files related to the user (patient or doctor)
-            if is_superuser:
-                # Superuser can access all audio files
-                audio_files = TranslationAudio.objects.all()
-            elif is_patient:
-                # A patient can only access their own audio files
-                audio_files = TranslationAudio.objects.filter(session__patient=user)
-            elif is_doctor:
-                # A doctor can access audio files of their patients
-                audio_files = TranslationAudio.objects.filter(session__provider=user)
-            else:
-                return Response({"error": "User role is not recognized."}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Serialize and return the list of audio files
-            serializer = TranslationAudioSerializer(audio_files, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def delete(self, request, session_id):
+    def get(self, request):
         """
-        DELETE request to delete an audio file for a session.
+        Retrieve translation history for the authenticated user.
         """
-        try:
-            audio = TranslationAudio.objects.get(session__id=session_id)
-        except TranslationAudio.DoesNotExist:
-            return Response({"error": "Audio not found."}, status=status.HTTP_404_NOT_FOUND)
+        user = request.user
+        profile = Profile.objects.get(user=user)
 
-        # Superuser can delete any audio file
-        if request.user.is_superuser:
-            audio.delete()
-            return Response({"message": "Audio file deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        user = request.user
+        profile = Profile.objects.get(user=user)
 
-        # Only allow deletion if the user is associated with the session (patient or doctor)
-        if audio.session.patient == request.user or audio.session.provider == request.user:
-            audio.delete()
-            return Response({"message": "Audio file deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+        if profile.is_patient:
+            translations = TranslationHistory.objects.filter(patient=profile).select_related('from_language', 'to_language', 'message').order_by('-created_at')
         else:
-            return Response({"error": "You are not authorized to delete this audio."}, status=status.HTTP_403_FORBIDDEN)
-        
+            translations = TranslationHistory.objects.filter(doctor=profile).select_related('from_language', 'to_language', 'message').order_by('-created_at')
+
+        serializer = TranslationHistorySerializer(translations, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class MessagePagination(PageNumberPagination):
+    page_size = 10
+
+class MessageListView(ListAPIView):
+    """
+    API to retrieve paginated messages for the authenticated user.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = MessageSerializer
+    pagination_class = MessagePagination
+
+    def get_queryset(self):
+        return Message.objects.filter(receiver=self.request.user).order_by('-timestamp')
+    
+class TranslationHistoryPagination(PageNumberPagination):
+    page_size = 10
+
+class TranslationHistoryListView(ListAPIView):
+    """
+    API to retrieve paginated translation history for the authenticated user.
+    """
+    permission_classes = [IsAuthenticated]
+    serializer_class = TranslationHistorySerializer
+    pagination_class = TranslationHistoryPagination
+
+    def get_queryset(self):
+        user = self.request.user
+        profile = Profile.objects.get(user=user)
+
+        if profile.is_patient:
+            return TranslationHistory.objects.filter(patient=profile).order_by('-created_at')
+        else:
+            return TranslationHistory.objects.filter(doctor=profile).order_by('-created_at')

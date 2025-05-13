@@ -21,10 +21,9 @@ urlpatterns = [
     # User Profile
     path('profile/', views.ProfileView.as_view(), name='profile'),
     
-    # Translation Session
-    path('translation/session/', views.TranslationSessionView.as_view(), name='translation-session'),
+    # Message History
+    path('messages/', views.MessageListView.as_view(), name='message-list'),
     
-    # Translation Audio
-    path('translation/audio/<int:session_id>/', views.TranslationAudioView.as_view(), name='translation-audio'),
-    path('translation/audio/', views.TranslationAudioView.as_view(), name='translation-audio-list'),
+    # Translation History
+    path('translations/', views.TranslationHistoryListView.as_view(), name='translation-history'),
 ]
