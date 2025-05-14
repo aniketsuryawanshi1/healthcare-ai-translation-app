@@ -115,6 +115,16 @@ class LanguageListView(APIView):
         serializer = LanguageSerializer(languages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+class PatientListView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        if not request.user.profile.is_doctor:
+            return Response({"error" : "Only doctors can viw the patient list."}, status=status.HTTP_403_FORBIDDEN)
+        
+        patients = Profile.objects.filter(is_patient=True)
+        serializer = ProfileSerializer(patients, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class MessageView(APIView):
@@ -139,28 +149,22 @@ class MessageView(APIView):
         except Profile.DoesNotExist:
             return Response({"error": "Receiver not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Get sender and receiver languages
         sender_profile = Profile.objects.get(user=sender)
         receiver_profile = Profile.objects.get(user=receiver)
 
         sender_language = sender_profile.language.language_code
         receiver_language = receiver_profile.language.language_code
-        
-        if not sender_language or not receiver_language:
-            return Response({"error": "Language not found for sender or receiver."}, status=status.HTTP_400_BAD_REQUEST)
 
-
-        # Translate the message if languages differ
         if sender_language != receiver_language:
             translated_text = translate_text(text, sender_language, receiver_language)
         else:
             translated_text = text
 
-        # Save the original message
         message = Message.objects.create(
             sender=sender,
             receiver=receiver,
             text=text,
+            translated_text=translated_text,
             language=sender_profile.language
         )
 
@@ -178,15 +182,24 @@ class MessageView(APIView):
 
         return Response({"message": "Message sent successfully."}, status=status.HTTP_201_CREATED)
 
-    def get(self, request):
+    def get(self, request,patient_id):
         """
         Retrieve messages for the authenticated user.
         """
         user = request.user
-        messages = Message.objects.filter(receiver=user).select_related('sender', 'receiver', 'language').order_by('-timestamp')
-        serializer = MessageSerializer(messages, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
+        if not user.profile.is_doctor and not user.profile.is_patient:
+            return Response({"error" : "Unauthorized access."}, status = status.HTTP_403_FORBIDDEN )
+        
+        messages = Message.objects.filter(
+            sender_id__in=[user.id, patient_id],
+            receiver_id__in = [user.id, patient_id]
+        ).order_by('timestamp')
+        
+        # Mark message as read
+        messages.filter(receiver = user, is_read=False).update(is_read=True)
+        
+        serializer = MessageSerializer(messages, many = True)
+        return Response(serializer.data, status = status.HTTP_200_OK)
 
 class TranslationHistoryView(APIView):
     """

@@ -17,14 +17,3 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt /app/
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-COPY . /app/
-
-# Run model download during build
-RUN python download_model.py
-
-
-RUN chmod +x manage.py
-RUN python manage.py collectstatic --noinput || true
-
-# Use Daphne for WebSocket support
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "healthcare_ai_translation.asgi:application"]

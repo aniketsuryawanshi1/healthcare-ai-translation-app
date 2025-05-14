@@ -16,6 +16,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = User
         fields = ['username', 'email', 'password', 'password2', 'is_doctor']
 
+
     def validate(self, attrs):
         password = attrs.get('password')
         password2 = attrs.get('password2')
@@ -33,7 +34,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password2')
         password = validated_data.pop('password')
-        
+        email = validated_data.get('email')
+
+        if User.objects.filter(email=email).exists():
+            raise serializers.ValidationError({"email": "This email is already registered."})
+
         user = User(**validated_data)
         user.set_password(password)
         user.save()
@@ -46,6 +51,7 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
     username = serializers.CharField(read_only=True)
     is_doctor = serializers.BooleanField(read_only=True)
+    is_patient = serializers.BooleanField(read_only=True)
     access_token = serializers.CharField(max_length=255, read_only=True)
     refresh_token = serializers.CharField(max_length=255, read_only=True)
 
@@ -71,6 +77,7 @@ class LoginSerializer(serializers.Serializer):
             'email': user.email,
             'username': user.username,
             'is_doctor': user.is_doctor,
+            'is_patient': user.is_patient,
             'access_token': str(refresh.access_token),
             'refresh_token': str(refresh)
         }
@@ -98,12 +105,12 @@ class LogoutSerializer(serializers.Serializer):
             
             
             
-""" User Profile Serializer """
+
 """ User Profile Serializer """
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['user', 'is_patient', 'first_name', 'last_name', 'phone_number', 'profile_image', 'gender', 'language']
+        fields = ['id','user', 'is_patient','is_doctor', 'first_name', 'last_name', 'phone_number', 'profile_image', 'gender', 'language']
         extra_kwargs = {
             'profile_image': {'required': False, 'allow_null': True},
             'user': {'read_only': True},
@@ -137,7 +144,12 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'receiver', 'text', 'timestamp', 'is_read', 'language']
+        fields = fields = ['id', 'sender', 'receiver', 'language', 'text', 'translated_text', 'is_read', 'timestamp']
+
+    def validate(self, attrs):
+        if not attrs.get('text') and not attrs.get('translated_text'):
+            raise serializers.ValidationError("Message text cannot be empty.")
+        return attrs
 
     def create(self, validated_data):
         return Message.objects.create(**validated_data)
@@ -156,6 +168,6 @@ class TranslationHistorySerializer(serializers.ModelSerializer):
             'id', 'patient', 'doctor', 'original_text', 'translated_text',
             'from_language', 'to_language', 'is_from_patient', 'created_at', 'message'
         ]
-
+    
     def create(self, validated_data):
         return TranslationHistory.objects.create(**validated_data)

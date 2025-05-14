@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import AxiosInstance from '../../utils/api-handler';
-// Async thunk to fetch translation history
-export const fetchTranslationHistory = createAsyncThunk(
-  'translationHistory/fetchTranslationHistory',
+// Async thunk to fetch patients
+export const fetchPatients = createAsyncThunk(
+  'patients/fetchPatients',
   async (_, { rejectWithValue }) => {
     try {
-      const response = await AxiosInstance.get('translations/');
+      const response = await AxiosInstance.get('patients/');
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -13,29 +13,29 @@ export const fetchTranslationHistory = createAsyncThunk(
   }
 );
 
-const translationHistorySlice = createSlice({
-  name: 'translationHistory',
+const patientSlice = createSlice({
+  name: 'patients',
   initialState: {
-    history: [],
+    patients: [],
     loading: false,
     error: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
-      .addCase(fetchTranslationHistory.pending, (state) => {
+      .addCase(fetchPatients.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchTranslationHistory.fulfilled, (state, action) => {
+      .addCase(fetchPatients.fulfilled, (state, action) => {
         state.loading = false;
-        state.history = action.payload;
+        state.patients = action.payload;
       })
-      .addCase(fetchTranslationHistory.rejected, (state, action) => {
+      .addCase(fetchPatients.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });
   },
 });
 
-export default translationHistorySlice.reducer;
+export default patientSlice.reducer;

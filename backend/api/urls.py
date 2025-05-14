@@ -21,8 +21,11 @@ urlpatterns = [
     # User Profile
     path('profile/', views.ProfileView.as_view(), name='profile'),
     
+    # Patient List
+    path('patients/', views.PatientListView.as_view(), name='patient-list'),
+    
     # Message History
-    path('messages/', views.MessageListView.as_view(), name='message-list'),
+    path('messages/<int:patient_id>/', views.MessageView.as_view(), name='message-list'),
     
     # Translation History
     path('translations/', views.TranslationHistoryListView.as_view(), name='translation-history'),

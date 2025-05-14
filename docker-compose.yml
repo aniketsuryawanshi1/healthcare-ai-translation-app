@@ -46,6 +46,7 @@ services:
       REDIS_PORT: 6379
     command: >
       sh -c "
+             python download_model.py &&
              python manage.py collectstatic --noinput &&
              daphne -b 0.0.0.0 -p 8000 healthcare_ai_translation.asgi:application"
     networks:

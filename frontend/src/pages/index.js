@@ -1,11 +1,11 @@
 import Register from "./Authentication/Register";
 import Login from "./Authentication/Login";
 
-import Dashboard from "./Home/Dashboard";
+import HealthcareDashboard from "./Home/HealthcareDashboard";
 
 import LandingPage from "./Home/LandingPage";
 import PatientDashboard from './Home/PatientDashboard';
-
+import AddProfileForm from "./Home/AddProfileForm";
 import ProfileForm from "./Home/profile"
 
 export {
@@ -15,8 +15,9 @@ export {
   LandingPage,
 
   // Home Page Pages
-  Dashboard,
+  HealthcareDashboard,
   PatientDashboard,
   ProfileForm,
+  AddProfileForm,
 
 };

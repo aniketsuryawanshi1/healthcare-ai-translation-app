@@ -3,13 +3,11 @@ import { Layout } from "antd";
 import {
   Register,
   Login,
-  
-  Dashboard,
+  HealthcareDashboard,
  PatientDashboard ,
- 
   LandingPage,
   ProfileForm,
-
+  AddProfileForm,
 } from "../pages/index";
 
 
@@ -55,13 +53,22 @@ const MainRoutes = () => {
                 }
               />
               <Route
+              path="/test"
+              element={
+                <PublicRoutes>
+                  <AddProfileForm />
+                  </PublicRoutes>
+              }
+              />
+
+              {/* <Route
                 path="/profile"
                 element={
                   <PublicRoutes>
                     <ProfileForm />
                   </PublicRoutes>
                 }
-              />
+              /> */}
               <Route
                 path="/register"
                 element={
@@ -84,7 +91,7 @@ const MainRoutes = () => {
                 path="/dashboard"
                 element={
                   <PrivateRoute>
-                    <Dashboard />
+                    <HealthcareDashboard />
                   </PrivateRoute>
                 }
               />

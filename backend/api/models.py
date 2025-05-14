@@ -49,7 +49,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now=True)
     auth_provider = models.CharField(max_length=50, blank=False, null=False, default=AUTH_PROVIDERS.get('email'))
-    is_doctor = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = ['email']
@@ -84,6 +83,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     is_patient = models.BooleanField(default=False,db_index=True)  # To distinguish between patient and healthcare provider
+    is_doctor = models.BooleanField(default=False,db_index=True)
     first_name = models.CharField(max_length=20)
     last_name = models.CharField(max_length=20)
     phone_number = models.CharField(max_length=15)
@@ -127,6 +127,7 @@ class Message(models.Model):
     text = models.TextField()
     timestamp = models.DateTimeField(default=timezone.now)
     is_read = models.BooleanField(default=False)
+    translated_text = models.TextField(null=True, blank=True)
     language = models.ForeignKey(Language, on_delete=models.SET_NULL, null=True, related_name="messages")  # Added language field
 
     def __str__(self):
