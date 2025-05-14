@@ -50,8 +50,6 @@ class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
     username = serializers.CharField(read_only=True)
-    is_doctor = serializers.BooleanField(read_only=True)
-    is_patient = serializers.BooleanField(read_only=True)
     access_token = serializers.CharField(max_length=255, read_only=True)
     refresh_token = serializers.CharField(max_length=255, read_only=True)
 
@@ -76,8 +74,6 @@ class LoginSerializer(serializers.Serializer):
         return {
             'email': user.email,
             'username': user.username,
-            'is_doctor': user.is_doctor,
-            'is_patient': user.is_patient,
             'access_token': str(refresh.access_token),
             'refresh_token': str(refresh)
         }
