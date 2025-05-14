@@ -10,11 +10,11 @@ from rest_framework_simplejwt.exceptions import TokenError
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(max_length=68, min_length=6, write_only=True)
     password2 = serializers.CharField(max_length=68, min_length=6, write_only=True)
-    is_doctor = serializers.BooleanField(default=False)
+    
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'password2', 'is_doctor']
+        fields = ['username', 'email', 'password', 'password2', ]
 
 
     def validate(self, attrs):
