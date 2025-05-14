@@ -133,16 +133,16 @@ class MessageView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def post(self, request):
+    def post(self, request, patient_id):  
         """
         Send a message from one user to another.
         """
         sender = request.user
-        receiver_id = request.data.get('receiver_id')
+        receiver_id = patient_id
         text = request.data.get('text')
 
-        if not receiver_id or not text:
-            return Response({"error": "Receiver ID and text are required."}, status=status.HTTP_400_BAD_REQUEST)
+        if not text:
+            return Response({"error": "Text is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             receiver = Profile.objects.get(user_id=receiver_id).user
@@ -182,24 +182,24 @@ class MessageView(APIView):
 
         return Response({"message": "Message sent successfully."}, status=status.HTTP_201_CREATED)
 
-    def get(self, request,patient_id):
+    def get(self, request, patient_id):
         """
         Retrieve messages for the authenticated user.
         """
         user = request.user
         if not user.profile.is_doctor and not user.profile.is_patient:
-            return Response({"error" : "Unauthorized access."}, status = status.HTTP_403_FORBIDDEN )
-        
+            return Response({"error": "Unauthorized access."}, status=status.HTTP_403_FORBIDDEN)
+
         messages = Message.objects.filter(
             sender_id__in=[user.id, patient_id],
-            receiver_id__in = [user.id, patient_id]
+            receiver_id__in=[user.id, patient_id]
         ).order_by('timestamp')
-        
+
         # Mark message as read
-        messages.filter(receiver = user, is_read=False).update(is_read=True)
-        
-        serializer = MessageSerializer(messages, many = True)
-        return Response(serializer.data, status = status.HTTP_200_OK)
+        messages.filter(receiver=user, is_read=False).update(is_read=True)
+
+        serializer = MessageSerializer(messages, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 class TranslationHistoryView(APIView):
     """
