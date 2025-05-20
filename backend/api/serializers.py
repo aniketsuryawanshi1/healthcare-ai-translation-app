@@ -48,6 +48,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
+    id = serializers.IntegerField(read_only=True)
     password = serializers.CharField(write_only=True)
     username = serializers.CharField(read_only=True)
     access_token = serializers.CharField(max_length=255, read_only=True)
@@ -72,6 +73,7 @@ class LoginSerializer(serializers.Serializer):
         refresh = RefreshToken.for_user(user)
 
         return {
+            'id':user.id,
             'email': user.email,
             'username': user.username,
             'access_token': str(refresh.access_token),

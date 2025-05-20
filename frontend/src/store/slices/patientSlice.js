@@ -1,11 +1,12 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import AxiosInstance from '../../utils/api-handler';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import AxiosInstance from "../../utils/api-handler";
+
 // Async thunk to fetch patients
 export const fetchPatients = createAsyncThunk(
-  'patients/fetchPatients',
+  "patients/fetchPatients",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await AxiosInstance.get('patients/');
+      const response = await AxiosInstance.get("patients/");
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -14,13 +15,24 @@ export const fetchPatients = createAsyncThunk(
 );
 
 const patientSlice = createSlice({
-  name: 'patients',
+  name: "patients",
   initialState: {
     patients: [],
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    // New reducer to add a patient immediately to state
+    addPatient: (state, action) => {
+      state.patients.push(action.payload);
+    },
+    // Optional: clear patients if needed
+    clearPatients: (state) => {
+      state.patients = [];
+      state.loading = false;
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchPatients.pending, (state) => {
@@ -37,5 +49,8 @@ const patientSlice = createSlice({
       });
   },
 });
+
+// Export the new action
+export const { addPatient, clearPatients } = patientSlice.actions;
 
 export default patientSlice.reducer;

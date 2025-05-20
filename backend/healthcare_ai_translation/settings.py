@@ -56,13 +56,14 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "corsheaders.middleware.CorsMiddleware", # CORS middleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "corsheaders.middleware.CorsMiddleware", # CORS middleware
+
 ]
 
 AUTH_USER_MODEL='api.User'
@@ -102,11 +103,14 @@ WSGI_APPLICATION = 'healthcare_ai_translation.wsgi.application'
 ASGI_APPLICATION = 'healthcare_ai_translation.asgi.application'
 
 # Redis configuration for WebSocket channel layers
+REDIS_HOST = os.getenv('REDIS_HOST', 'redis')
+REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],  # Redis server
+            'hosts': [(REDIS_HOST, REDIS_PORT)],
         },
     },
 }
@@ -145,11 +149,7 @@ REST_FRAMEWORK = {
 }
 
 
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=10), # type: ignore
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1), # type: ignore
-    'AUTH_HEADER_TYPES': ('Bearer',),
-}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

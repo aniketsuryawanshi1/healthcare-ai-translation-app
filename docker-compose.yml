@@ -53,11 +53,15 @@ services:
       - app_network
 
   frontend:
-    build:
-      context: ./frontend
+    image: node:22-alpine  # Use Node image directly
     container_name: frontend_service
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
-      - "3000:80"
+      - "3000:5173"  # Expose dev server port
+    command: sh -c "npm install && npm run dev"
     depends_on:
       - backend
     networks:

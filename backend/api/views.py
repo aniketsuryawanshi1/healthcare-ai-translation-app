@@ -133,7 +133,7 @@ class MessageView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, patient_id):  
+    def post(self, request, patient_id):
         """
         Send a message from one user to another.
         """
@@ -152,14 +152,17 @@ class MessageView(APIView):
         sender_profile = Profile.objects.get(user=sender)
         receiver_profile = Profile.objects.get(user=receiver)
 
+        # Language codes for translation
         sender_language = sender_profile.language.language_code
         receiver_language = receiver_profile.language.language_code
 
+        # Translate if languages differ
         if sender_language != receiver_language:
             translated_text = translate_text(text, sender_language, receiver_language)
         else:
             translated_text = text
 
+        # Create message record
         message = Message.objects.create(
             sender=sender,
             receiver=receiver,
@@ -168,15 +171,27 @@ class MessageView(APIView):
             language=sender_profile.language
         )
 
-        # Save the translation in TranslationHistory
+        # Determine doctor and patient profiles based on is_doctor and is_patient flags
+        if sender_profile.is_doctor and receiver_profile.is_patient:
+            doctor_profile = sender_profile
+            patient_profile = receiver_profile
+            is_from_patient = False
+        elif receiver_profile.is_doctor and sender_profile.is_patient:
+            doctor_profile = receiver_profile
+            patient_profile = sender_profile
+            is_from_patient = True
+        else:
+            return Response({"error": "Invalid sender/receiver roles."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Save translation history
         TranslationHistory.objects.create(
-            patient=sender_profile if sender_profile.is_patient else receiver_profile,
-            doctor=receiver_profile if receiver_profile.is_doctor else sender_profile,
+            patient=patient_profile,
+            doctor=doctor_profile,
             original_text=text,
             translated_text=translated_text,
             from_language=sender_profile.language,
             to_language=receiver_profile.language,
-            is_from_patient=sender_profile.is_patient,
+            is_from_patient=is_from_patient,
             message=message
         )
 
@@ -195,12 +210,12 @@ class MessageView(APIView):
             receiver_id__in=[user.id, patient_id]
         ).order_by('timestamp')
 
-        # Mark message as read
+        # Mark messages as read
         messages.filter(receiver=user, is_read=False).update(is_read=True)
 
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-
+    
 class TranslationHistoryView(APIView):
     """
     API to retrieve translation history.
