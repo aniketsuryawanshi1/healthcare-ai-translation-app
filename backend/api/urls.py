@@ -25,7 +25,7 @@ urlpatterns = [
     path('patients/', views.PatientListView.as_view(), name='patient-list'),
     
     # Message History
-    path('messages/<int:patient_id>/', views.MessageView.as_view(), name='message-list'),
+    path('messages/<int:user_id>/', views.MessageView.as_view(), name='message-list'),
     
     # Translation History
     path('translations/', views.TranslationHistoryListView.as_view(), name='translation-history'),

@@ -6,8 +6,10 @@ import {
   HealthcareDashboard,
  PatientDashboard ,
   LandingPage,
-  ProfileForm,
+  PatientChat,
   AddProfileForm,
+  DoctorChat,
+  TestOnePAge
 } from "../pages/index";
 
 
@@ -29,7 +31,6 @@ const MainRoutes = () => {
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
-  padding: "10px",
   minHeight: "100vh",
   width: "100%",     
   overflowX: "hidden"  
@@ -56,7 +57,7 @@ const MainRoutes = () => {
               path="/test"
               element={
                 <PublicRoutes>
-                  <AddProfileForm />
+                  <HealthcareDashboard />
                   </PublicRoutes>
               }
               />
@@ -91,7 +92,7 @@ const MainRoutes = () => {
                 path="/dashboard"
                 element={
                   <PrivateRoute>
-                    <HealthcareDashboard />
+                    <TestOnePAge />
                   </PrivateRoute>
                 }
               />

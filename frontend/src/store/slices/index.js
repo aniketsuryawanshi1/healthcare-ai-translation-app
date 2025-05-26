@@ -1,10 +1,12 @@
 import languageReducer from '../slices/languageSlice';
-import messageReducer from '../slices/messageSlice';
 import translationHistoryReducer from '../slices/translationHistorySlice';
 import patientReducer from "../slices/patientSlice";
+import profileReducer from "../slices/patientSlice";
+import chatReducer from "../slices/chatSlice";
 export {
     languageReducer,
-    messageReducer,
+    chatReducer,
     translationHistoryReducer,
      patientReducer,
+     profileReducer,
 }

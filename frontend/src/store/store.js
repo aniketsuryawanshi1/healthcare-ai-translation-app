@@ -1,12 +1,13 @@
 import { configureStore } from '@reduxjs/toolkit';
-import { languageReducer, messageReducer, translationHistoryReducer,patientReducer, } from './slices';
+import { languageReducer, chatReducer, translationHistoryReducer,patientReducer,profileReducer } from './slices';
 
 const store = configureStore({
   reducer: {
     language : languageReducer,
-    message:messageReducer,
+    chat: chatReducer,
     translationHistory :translationHistoryReducer,
     patients: patientReducer,
+    profile: profileReducer,
   },
 });
 

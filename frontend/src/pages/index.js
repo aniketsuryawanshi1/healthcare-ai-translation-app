@@ -7,7 +7,9 @@ import LandingPage from "./Home/LandingPage";
 import PatientDashboard from './Home/PatientDashboard';
 import AddProfileForm from "./Home/AddProfileForm";
 import ProfileForm from "./Home/profile"
-
+import PatientChat from "./Home/PatientChat";
+import DoctorChat from "./Home/DoctorChat";
+import TestOnePAge from "./Home/TestOnePage";
 export {
   Register,
   Login,
@@ -19,5 +21,7 @@ export {
   PatientDashboard,
   ProfileForm,
   AddProfileForm,
-
+PatientChat,
+DoctorChat,
+TestOnePAge
 };

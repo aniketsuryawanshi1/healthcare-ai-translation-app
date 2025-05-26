@@ -1,0 +1,96 @@
+.container {
+    height: 100vh;
+    width: 100%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .leftPanel {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: 100% !important;
+    color: #999;
+    font-size: 1.2rem;
+    user-select: none;
+    background-color: #fafafa;
+  }
+  
+  .rightPanel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background-color: #fff;
+    border-left: 1px solid #eee;
+    overflow: hidden;
+  }
+  
+  .stickyHeader {
+    position: sticky;
+    top: 0;
+    background-color: #1890ff;
+    color: white;
+    padding: 16px 24px;
+    font-weight: 600;
+    font-size: 1.25rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    z-index: 10;
+    user-select: none;
+  }
+  
+  .chatMessages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    background-color: #f9fafb;
+  
+    /* Hide scrollbar */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE 10+ */
+  }
+  
+  .chatMessages::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+  
+  .chatMessageWrapper {
+    display: flex;
+    padding: 8px 16px;
+  }
+  
+  .chatMessageSent {
+    justify-content: flex-end;
+  }
+  
+  .chatMessageReceived {
+    justify-content: flex-start;
+  }
+  
+  .chatMessageBubbleSent {
+    background-color: #1890ff;
+    color: white;
+    padding: 10px 16px;
+    border-radius: 20px;
+    max-width: 70%;
+    word-break: break-word;
+    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+  }
+  
+  .chatMessageBubbleReceived {
+    background-color: #f0f0f0;
+    color: black;
+    padding: 10px 16px;
+    border-radius: 20px;
+    max-width: 70%;
+    word-break: break-word;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .inputArea {
+    padding: 12px 16px;
+    display: flex;
+    border-top: 1px solid #eee;
+    background-color: #fff;
+  }
+  

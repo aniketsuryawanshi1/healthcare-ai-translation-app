@@ -10,6 +10,9 @@ from .utils import translate_text
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.generics import ListAPIView
+from django.shortcuts import get_object_or_404
+
+
 
 """ User Registration View. """
 class RegisterView(APIView):
@@ -133,36 +136,39 @@ class MessageView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, patient_id):
+    def post(self, request, user_id):
         """
-        Send a message from one user to another.
+        Send a message from patient to doctor or vice versa.
         """
         sender = request.user
-        receiver_id = patient_id
+        sender_profile = get_object_or_404(Profile, user=sender)
         text = request.data.get('text')
 
         if not text:
             return Response({"error": "Text is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            receiver = Profile.objects.get(user_id=receiver_id).user
-        except Profile.DoesNotExist:
+        # Determine receiver based on sender role
+        if sender_profile.is_patient:
+            # Patient sending message to doctor (only one doctor)
+            receiver_profile = Profile.objects.filter(is_doctor=True).first()
+        elif sender_profile.is_doctor:
+            # Doctor sending message to a specific patient
+            receiver_profile = get_object_or_404(Profile, user__id=user_id, is_patient=True)
+        else:
+            return Response({"error": "Invalid user role."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not receiver_profile:
             return Response({"error": "Receiver not found."}, status=status.HTTP_404_NOT_FOUND)
 
-        sender_profile = Profile.objects.get(user=sender)
-        receiver_profile = Profile.objects.get(user=receiver)
+        receiver = receiver_profile.user
 
-        # Language codes for translation
+        # Translate message if needed
         sender_language = sender_profile.language.language_code
         receiver_language = receiver_profile.language.language_code
+        translated_text = translate_text(text, sender_language, receiver_language) \
+            if sender_language != receiver_language else text
 
-        # Translate if languages differ
-        if sender_language != receiver_language:
-            translated_text = translate_text(text, sender_language, receiver_language)
-        else:
-            translated_text = text
-
-        # Create message record
+        # Create the message
         message = Message.objects.create(
             sender=sender,
             receiver=receiver,
@@ -171,17 +177,10 @@ class MessageView(APIView):
             language=sender_profile.language
         )
 
-        # Determine doctor and patient profiles based on is_doctor and is_patient flags
-        if sender_profile.is_doctor and receiver_profile.is_patient:
-            doctor_profile = sender_profile
-            patient_profile = receiver_profile
-            is_from_patient = False
-        elif receiver_profile.is_doctor and sender_profile.is_patient:
-            doctor_profile = receiver_profile
-            patient_profile = sender_profile
-            is_from_patient = True
-        else:
-            return Response({"error": "Invalid sender/receiver roles."}, status=status.HTTP_400_BAD_REQUEST)
+        # Identify doctor and patient roles
+        doctor_profile = sender_profile if sender_profile.is_doctor else receiver_profile
+        patient_profile = sender_profile if sender_profile.is_patient else receiver_profile
+        is_from_patient = sender_profile.is_patient
 
         # Save translation history
         TranslationHistory.objects.create(
@@ -195,27 +194,26 @@ class MessageView(APIView):
             message=message
         )
 
-        return Response({"message": "Message sent successfully."}, status=status.HTTP_201_CREATED)
+        return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
-    def get(self, request, patient_id):
+    def get(self, request, user_id):
         """
-        Retrieve messages for the authenticated user.
+        Retrieve messages between authenticated user and other user.
         """
         user = request.user
         if not user.profile.is_doctor and not user.profile.is_patient:
             return Response({"error": "Unauthorized access."}, status=status.HTTP_403_FORBIDDEN)
 
         messages = Message.objects.filter(
-            sender_id__in=[user.id, patient_id],
-            receiver_id__in=[user.id, patient_id]
+            sender_id__in=[user.id, user_id],
+            receiver_id__in=[user.id, user_id]
         ).order_by('timestamp')
 
-        # Mark messages as read
         messages.filter(receiver=user, is_read=False).update(is_read=True)
 
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+        
 class TranslationHistoryView(APIView):
     """
     API to retrieve translation history.

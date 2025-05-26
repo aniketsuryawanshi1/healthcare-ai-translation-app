@@ -1,0 +1,83 @@
+/* Profile Modal Styling */
+.profile-modal .ant-modal-content {
+    background: linear-gradient(135deg, #2c3e50, #4ca1af);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Modal Title */
+  .profile-modal .ant-modal-title {
+    color: #fff;
+    font-size: 24px;
+    font-weight: 600;
+    text-align: center;
+  }
+  
+  /* Form labels */
+  .profile-modal .ant-form-item-label > label {
+    color: #ffffffd9;
+    font-weight: 500;
+  }
+  
+  /* Inputs and Selects */
+  .profile-modal .ant-input,
+  .profile-modal .ant-select-selector,
+  .profile-modal .ant-input-affix-wrapper {
+    background-color: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    transition: border-color 0.3s ease;
+  }
+  
+  .profile-modal .ant-input:focus,
+  .profile-modal .ant-input:hover,
+  .profile-modal .ant-input-affix-wrapper:focus-within,
+  .profile-modal .ant-select-focused .ant-select-selector {
+    border-color: #1890ff;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  }
+  
+  /* Upload Circle */
+  .profile-modal .ant-upload.ant-upload-select-picture-circle {
+    background-color: #fff;
+    border: 2px dashed #ccc;
+    transition: border-color 0.3s ease;
+  }
+  
+  .profile-modal .ant-upload.ant-upload-select-picture-circle:hover {
+    border-color: #1890ff;
+  }
+  
+  /* Upload text */
+  .profile-modal .ant-upload-text {
+    color: #333;
+  }
+  
+  /* Checkbox */
+  .profile-modal .ant-checkbox-wrapper {
+    color: #fff;
+  }
+  
+  /* Submit button */
+  .profile-modal .ant-btn-primary {
+    background-color: #00c9a7;
+    border-color: #00c9a7;
+    font-weight: bold;
+    padding: 8px 32px;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+  }
+  
+  .profile-modal .ant-btn-primary:hover {
+    background-color: #00b894;
+    border-color: #00b894;
+  }
+  
+  /* Responsive Modal Width */
+  @media (max-width: 768px) {
+    .profile-modal .ant-modal {
+      width: 90% !important;
+    }
+  }
+  

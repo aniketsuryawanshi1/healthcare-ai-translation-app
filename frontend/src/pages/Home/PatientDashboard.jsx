@@ -1,213 +1,141 @@
-import React, { useState, useRef } from "react";
-import {
-  Col,
-  Row,
-  Dropdown,
-  Avatar,
-  Select,
-  Button,
-  Input,
-  Tooltip,
-  Progress,
-  Space,
-  Menu,
-} from "antd";
-import {
-  AudioOutlined,
-  PauseOutlined,
-  SendOutlined,
-  DownOutlined,
-  SoundOutlined,
-  UserOutlined,
-  EditOutlined,
-  LogoutOutlined,
-} from "@ant-design/icons";
-import "./patientDashboard.css";
+import React, { useState } from "react";
+import { Typography, Input, Button } from "antd";
+import { Desc } from "../../components"; // Optional voice assistant component
 
 const { TextArea } = Input;
-const { Option } = Select;
 
-const PatientDashboard = () => {
-  const [transcript, setTranscript] = useState("");
-  const [isListening, setIsListening] = useState(false);
-  const [language, setLanguage] = useState("en-US");
-  const [healthcareMessages, setHealthcareMessages] = useState([]);
-  const [playingMessageIndex, setPlayingMessageIndex] = useState(null);
-  const recognitionRef = useRef(null);
-
-  const startListening = () => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Speech Recognition not supported in this browser");
-      return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognitionRef.current = recognition;
-    recognition.lang = language;
-    recognition.continuous = false;
-
-    recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (event) => {
-      const speechResult = event.results[0][0].transcript;
-      setTranscript(speechResult);
-    };
-    recognition.onend = () => setIsListening(false);
-
-    recognition.start();
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
-  };
-
-  const toggleListening = () => {
-    isListening ? stopListening() : startListening();
-  };
-
-  const handleSend = () => {
-    if (transcript.trim()) {
-      setHealthcareMessages((prev) => [
-        ...prev,
-        { text: transcript, progress: 0 },
-      ]);
-      setTranscript("");
-    }
-  };
-
-  const handlePlayMessage = (index) => {
-    setPlayingMessageIndex(index);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setHealthcareMessages((prev) => {
-        const updated = [...prev];
-        updated[index].progress = progress;
-        return updated;
-      });
-      if (progress >= 100) {
-        clearInterval(interval);
-        setPlayingMessageIndex(null);
-      }
-    }, 200);
-  };
-
-  const userMenu = (
-    <Menu
-      onClick={({ key }) => {
-        if (key === "3") alert("Logging out...");
-      }}
-      items={[
-        {
-          key: "1",
-          icon: <UserOutlined />,
-          label: "View Profile",
-        },
-        {
-          key: "2",
-          icon: <EditOutlined />,
-          label: "Edit Profile",
-        },
-        {
-          key: "3",
-          icon: <LogoutOutlined />,
-          label: "Logout",
-        },
-      ]}
-    />
-  );
+const ChatMessage = ({ text, sender }) => {
+  const isSenderMe = sender === "me";
 
   return (
-    <section className="patient-dashboard">
-      <Row className="top-bar" justify="space-between" align="middle">
-        <Col>
-          <Dropdown overlay={userMenu} trigger={["hover"]}>
-            <div className="user-profile hover-glow">
-              <Avatar size={64} src="https://via.placeholder.com/150" />
-              <span className="username">
-                Aniket Suryavanshi <DownOutlined />
-              </span>
-            </div>
-          </Dropdown>
-        </Col>
-        <Col>
-          <div className="healthcare-profile hover-glow">
-            <Avatar size={64} src="https://via.placeholder.com/150" />
-            <span className="username">Healthcare Provider</span>
-          </div>
-        </Col>
-      </Row>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: isSenderMe ? "flex-end" : "flex-start",
+        marginBottom: 8,
+        padding: 8,
+      }}
+    >
+      <div
+        style={{
+          maxWidth: "70%",
+          backgroundColor: isSenderMe ? "#1890ff" : "#f0f0f0",
+          color: isSenderMe ? "white" : "black",
+          borderRadius: 12,
+          padding: "8px 16px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          wordBreak: "break-word",
+        }}
+      >
+        {text}
+      </div>
+    </div>
+  );
+};
 
-      <Row gutter={32} className="dashboard-body">
-        <Col span={12} className="user-column">
-          <h3 className="section-title">👤 Patient Input</h3>
-          <Select
-            className="language-select"
-            value={language}
-            onChange={(val) => setLanguage(val)}
-          >
-            <Option value="en-US">English (US)</Option>
-            <Option value="hi-IN">Hindi</Option>
-            <Option value="mr-IN">Marathi</Option>
-          </Select>
+const PatientDashboard = () => {
+  const [input, setInput] = useState("");
+  const [messages, setMessages] = useState([
+    { text: "Hello, how can I help you today?", sender: "other" },
+    { text: "I have a question about my medication.", sender: "me" },
+  ]);
 
-          <div className="action-buttons">
-            <Tooltip title={isListening ? "Pause Listening" : "Start Listening"}>
-              <div className="circular-button" onClick={toggleListening}>
-                {isListening ? <PauseOutlined /> : <AudioOutlined />}
-              </div>
-            </Tooltip>
+  const handleSend = () => {
+    if (!input.trim()) return;
+    setMessages([...messages, { text: input, sender: "me" }]);
+    setInput("");
+  };
 
-            <Tooltip title="Send to Healthcare">
-              <Button
-                type="primary"
-                icon={<SendOutlined />}
-                onClick={handleSend}
-                disabled={!transcript}
-              >
-                Send
-              </Button>
-            </Tooltip>
-          </div>
-
-          <TextArea
-            rows={4}
-            value={transcript}
-            onChange={(e) => setTranscript(e.target.value)}
-            placeholder="Your message appears here..."
+  return (
+    <div style={{ height: "100vh", display: "flex", width: "100%" }}>
+      {/* Left Panel */}
+      <div
+        style={{
+          width: "40%",
+          backgroundColor: "#f7f7f7",
+          padding: "20px",
+          borderRight: "1px solid #e0e0e0",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <Typography.Title level={4}>Voice4Care</Typography.Title>
+          <p style={{ marginTop: 12, marginBottom: 4 }}>Voice Assistant:</p>
+          <Desc
+            text="Ask a question"
+            onSendMessage={(text) =>
+              setMessages([...messages, { text, sender: "me" }])
+            }
           />
-        </Col>
+        </div>
+        <Button type="primary" danger onClick={() => alert("Logged out!")}>
+          Logout
+        </Button>
+      </div>
 
-        <Col span={12} className="healthcare-column">
-          <h3 className="section-title">🏥 Healthcare Responses</h3>
-          <div className="chat-box">
-            {healthcareMessages.map((msg, index) => (
-              <div
-                key={index}
-                className="chat-bubble"
-                onClick={() => handlePlayMessage(index)}
-              >
-                <SoundOutlined style={{ marginRight: 10 }} />
-                {msg.progress > 0 ? (
-                  <div style={{ width: "100%" }}>
-                    <Progress percent={msg.progress} size="small" />
-                    {msg.progress >= 100 && (
-                      <p className="chat-text">{msg.text}</p>
-                    )}
-                  </div>
-                ) : (
-                  <span>Audio message (click to play)</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </Col>
-      </Row>
-    </section>
+      {/* Right Panel - Chat */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        {/* Chat Header */}
+        <div
+          style={{
+            padding: "12px 16px",
+            borderBottom: "1px solid #ddd",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <Typography.Title level={4} style={{ margin: 0 }}>
+            Chat with Healthcare
+          </Typography.Title>
+        </div>
+
+        {/* Messages Area */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            padding: "12px",
+            backgroundColor: "#fafafa",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {messages.length === 0 ? (
+            <p>No messages yet.</p>
+          ) : (
+            messages.map((msg, idx) => (
+              <ChatMessage key={idx} text={msg.text} sender={msg.sender} />
+            ))
+          )}
+        </div>
+
+        {/* Message Input */}
+        <div
+          style={{
+            display: "flex",
+            padding: "12px",
+            borderTop: "1px solid #ddd",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          <TextArea
+            rows={1}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onPressEnter={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+            placeholder="Type a message..."
+            style={{ marginRight: 8, resize: "none" }}
+          />
+          <Button type="primary" onClick={handleSend} disabled={!input.trim()}>
+            Send
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 
